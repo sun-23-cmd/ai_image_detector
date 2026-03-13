@@ -1,0 +1,105 @@
+/* ── Custom styles that extend Tailwind ── */
+
+:root {
+  --accent:  #00e5ff;
+  --accent2: #7b5ea7;
+  --real:    #00d68f;
+  --ai:      #ff4d6d;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient buttons */
+.btn-primary {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: #000;
+}
+.btn-retrain {
+  background: linear-gradient(90deg, #f7971e, #ffd200);
+  color: #000;
+}
+
+/* Confidence bars */
+.conf-bar-ai   { background: linear-gradient(90deg, #ff4d6d, #ff9f43); }
+.conf-bar-real { background: linear-gradient(90deg, #00d68f, #00e5ff); }
+
+/* Verdict banners */
+.verdict-ai   { background: rgba(255, 77, 109, 0.08); }
+.verdict-real { background: rgba(0, 214, 143, 0.08); }
+.verdict-ai   .verdict-label { color: var(--ai); }
+.verdict-real .verdict-label { color: var(--real); }
+
+/* Signal pills */
+.signal-ai   { border-color: rgba(255,77,109,.25) !important; }
+.signal-real { border-color: rgba(0,214,143,.25)  !important; }
+.dot-ai-color   { background: var(--ai); }
+.dot-real-color { background: var(--real); }
+
+/* Method badges */
+.badge-ml        { background: rgba(0,229,255,.15);   color: var(--accent); border: 1px solid rgba(0,229,255,.3); }
+.badge-heuristic { background: rgba(123,94,167,.15);  color: #b39ddb;       border: 1px solid rgba(123,94,167,.3); }
+
+/* Scanning animation */
+@keyframes scan {
+  0%   { top: 0; }
+  100% { top: 100%; }
+}
+.scan-line {
+  display: none;
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  animation: scan .8s linear infinite;
+  pointer-events: none;
+}
+.scanning .scan-line { display: block; }
+
+/* Active model dot */
+.dot-active {
+  background: var(--real) !important;
+  box-shadow: 0 0 6px var(--real);
+}
+
+/* Toast slide-up */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  transition: transform .3s ease;
+  white-space: nowrap;
+  z-index: 999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Confidence bar transition */
+.conf-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  width: 0%;
+  transition: width 1s ease;
+}
+
+/* Feedback saved text */
+.feedback-saved { display: none; }

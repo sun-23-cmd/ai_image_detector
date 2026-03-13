@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Image Detector</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#0b0e14',
+              900: '#13171f',
+              800: '#1e2530',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body class="bg-slate-950 text-slate-200 font-mono min-h-screen overflow-x-hidden">
+<div class="relative z-10 max-w-4xl mx-auto px-5 py-10 pb-20">
+
+  <!-- ── Header ── -->
+  <header class="text-center mb-12">
+    <div class="inline-flex items-center gap-3 mb-4">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+           style="background: linear-gradient(135deg, #00e5ff, #7b5ea7)">🔍</div>
+      <h1 class="text-4xl font-bold tracking-tight gradient-text">AI Image Detector</h1>
+    </div>
+    <p class="text-slate-500 text-sm uppercase tracking-widest mt-2">
+      Forensic analysis · Self-learning · Instant verdict
+    </p>
+  </header>
+
+  <!-- ── Stats bar ── -->
+  <div class="flex gap-3 flex-wrap mb-6">
+    <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-2 text-xs text-slate-400 tracking-wide">
+      <span id="modelDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+      Model: <span id="statModel" class="text-slate-200 font-bold ml-1">Heuristic</span>
+    </div>
+    <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-2 text-xs text-slate-400 tracking-wide">
+      <span class="w-2 h-2 rounded-full" style="background:#00e5ff"></span>
+      Training samples: <span id="statSamples" class="text-slate-200 font-bold ml-1">0</span>
+    </div>
+  </div>
+
+  <!-- ── Upload zone ── -->
+  <!-- File input hidden outside drop zone so text elements don't block it -->
+  <input type="file" id="fileInput" accept="image/*" class="hidden" />
+
+  <div id="dropZone"
+       class="relative border-2 border-dashed border-slate-800 rounded-2xl py-16 px-8 text-center
+              cursor-pointer bg-slate-900 transition-all duration-200 overflow-hidden">
+    <div class="scan-line"></div>
+    <span class="text-5xl block mb-4">🖼️</span>
+    <p id="uploadLabel" class="text-lg text-slate-200">Drop an image here or click to browse</p>
+    <p id="uploadHint"  class="text-slate-500 text-sm mt-2">PNG · JPG · WEBP · BMP · max 16 MB</p>
+  </div>
+
+  <!-- ── Progress bar ── -->
+  <div id="progressWrap" class="mt-3 h-1 bg-slate-800 rounded-full overflow-hidden" style="display:none">
+    <div id="progressBar" class="h-full rounded-full" style="width:0%; background:linear-gradient(90deg,#00e5ff,#7b5ea7); transition:width .4s ease;"></div>
+  </div>
+
+  <!-- ── Buttons ── -->
+  <button id="btnAnalyze" disabled
+          class="btn-primary w-full mt-3 py-4 rounded-xl font-bold uppercase tracking-widest text-sm
+                 transition-all duration-200 hover:-translate-y-0.5 opacity-40 cursor-not-allowed">
+    Analyze Image
+  </button>
+  <button id="btnRetrain"
+          class="btn-retrain w-full mt-2 py-4 rounded-xl font-bold uppercase tracking-widest text-sm
+                 transition-all duration-200 hover:-translate-y-0.5">
+    🧠 Retrain Model on Saved Data
+  </button>
+
+  <!-- ── Error box ── -->
+  <div id="errorBox"
+       class="mt-3 px-4 py-3 rounded-xl text-sm text-red-400 bg-red-400/10 border border-red-400/30"
+       style="display:none"></div>
+
+  <!-- ── Results ── -->
+  <div id="results" class="mt-8" style="display:none">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+
+      <!-- Verdict banner -->
+      <div id="verdictBanner" class="flex items-center gap-4 flex-wrap p-6 border-b border-slate-700">
+        <div id="verdictIcon"  class="text-4xl"></div>
+        <div>
+          <div id="verdictLabel" class="text-2xl font-bold verdict-label"></div>
+          <div id="verdictSub"   class="text-xs text-slate-500 mt-0.5 uppercase tracking-widest"></div>
+        </div>
+        <span id="methodBadge" class="ml-auto px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"></span>
+      </div>
+
+      <!-- Confidence bar -->
+      <div class="px-6 py-5 border-b border-slate-700">
+        <div class="flex justify-between items-center mb-2 text-xs text-slate-500 uppercase tracking-widest">
+          <span>Confidence</span>
+          <span id="confPct" class="text-xl font-bold text-slate-200"></span>
+        </div>
+        <div class="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+          <div id="confBar" class="conf-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Preview + Signals -->
+      <div class="grid grid-cols-1 md:grid-cols-2">
+
+        <!-- Image preview -->
+        <div class="flex flex-col items-center gap-3 p-6 border-b md:border-b-0 md:border-r border-slate-700">
+          <img id="previewImg" src="" alt="Preview"
+               class="max-w-full rounded-lg border border-slate-700" />
+          <span class="text-xs text-slate-500 uppercase tracking-widest">Image Preview</span>
+        </div>
+
+        <!-- Signals -->
+        <div class="p-6 flex flex-col gap-3 overflow-y-auto max-h-80">
+          <p class="text-xs text-slate-500 uppercase tracking-widest mb-1">Detection Signals</p>
+          <div id="signalsList" class="flex flex-col gap-2"></div>
+        </div>
+
+      </div>
+
+      <!-- Feedback -->
+      <div class="flex items-center gap-4 flex-wrap px-6 py-4 border-t border-slate-700">
+        <span class="text-xs text-slate-500 uppercase tracking-widest shrink-0">Was this correct?</span>
+        <div class="flex gap-3">
+          <button id="fbCorrect"
+                  class="px-5 py-2 rounded-full text-sm font-bold border transition-all duration-200
+                         hover:-translate-y-0.5 text-emerald-400 border-emerald-400/40 bg-emerald-400/10">
+            ✅ Yes, correct
+          </button>
+          <button id="fbWrong"
+                  class="px-5 py-2 rounded-full text-sm font-bold border transition-all duration-200
+                         hover:-translate-y-0.5 text-red-400 border-red-400/40 bg-red-400/10">
+            ❌ No, it's wrong
+          </button>
+        </div>
+        <span id="feedbackSaved" class="feedback-saved text-sm text-emerald-400">✓ Saved to training data!</span>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex gap-4 px-6 py-3 border-t border-slate-700 text-xs text-slate-500">
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full dot-ai-color"></span>AI indicator</span>
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full dot-real-color"></span>Real indicator</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast px-6 py-3 rounded-full text-sm font-mono border bg-slate-800"></div>
+
+<!-- Footer -->
+<footer class="text-center text-slate-600 text-xs mt-16 tracking-widest pb-6">
+  Built with Python · Flask · scikit-learn &nbsp;·&nbsp; AI-assisted project
+</footer>
+
+<!-- JavaScript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
